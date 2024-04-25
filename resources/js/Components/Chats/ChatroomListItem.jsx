@@ -1,16 +1,17 @@
+import { useChat } from "@/Contexts/ChatContext";
 import { useState } from "react";
 
 export default function ChatroomListItem({ chat, user_id, opened, onClick }) {
     const [lastMsg, setLastMsg] = useState({ msg: "", time: "" });
+    const { open } = useChat();
     let title;
-    if (chat.type === "private") {
-    }
     switch (chat.type) {
         case "private":
             //set title to the reciver name
+            title = chat.users[0].firstname + " " + chat.users[0].lastname;
             break;
         case "group":
-            //set title to group name
+            title = chat.title;
             break;
 
         default:
@@ -20,7 +21,11 @@ export default function ChatroomListItem({ chat, user_id, opened, onClick }) {
         <li
             key={`${chat.id}`}
             className="p-0 m-0"
-            onClick={(e) => onClick(e, chat)}
+            onClick={(e) => {
+                e.preventDefault();
+                open(chat);
+                onClick();
+            }}
         >
             <a
                 className={`grid grid-cols-4 m-0 gap-6 max-w-full border-t border-stroke px-4.5 py-3 hover:bg-teal-50 transition-all duration-150 ease-in-out dark:border-strokedark dark:hover:bg-meta-4 ${
@@ -29,7 +34,7 @@ export default function ChatroomListItem({ chat, user_id, opened, onClick }) {
             >
                 <div className="col-span-3 flex flex-col justify-end">
                     <h6 className="text-md font-bold text-black dark:text-white truncate">
-                        {title || `(${chat.id}) ${chat.title}` || "chat name"}
+                        {title || "unnamed chat"}
                     </h6>
                     <p className="text-sm">{lastMsg.msg || "somthing here"}</p>
                     <p className="text-xs">2min ago</p>

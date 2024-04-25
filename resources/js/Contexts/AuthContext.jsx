@@ -1,4 +1,5 @@
-import { createContext, useState, useContext } from "react";
+import axios from "axios";
+import { createContext, useState, useContext, useEffect } from "react";
 
 // Create a new context
 const AuthContext = createContext();
@@ -16,6 +17,28 @@ export const AuthProvider = ({ userRef, children }) => {
     const logout = () => {
         setUser(null);
     };
+
+    useEffect(() => {
+        const channelName = `user.${user.id}.updated`;
+        window.Echo.private(channelName).listen(
+            `UserPropsUpdatedEvent`,
+            async (data) => {
+                
+                try {
+                    debugger;
+                    const response = await axios.get("api/user" + user.id);
+                    const NewUser = response.data;
+                    setUser(NewUser);
+                } catch (err) {
+                    console.log("could not update the user");
+                }
+            }
+        );
+
+        return () => {
+            window.Echo.leave(channelName);
+        };
+    }, [user]);
 
     return (
         <AuthContext.Provider value={{ user, login, logout }}>

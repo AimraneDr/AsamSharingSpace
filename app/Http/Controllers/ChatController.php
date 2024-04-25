@@ -5,10 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use \App\Events\PublishMessageEvent;
-
 use \App\Models\Chat;
-use \App\Models\User;
-use \App\Models\Message;
+
 
 class ChatController extends Controller
 {
@@ -19,6 +17,12 @@ class ChatController extends Controller
     {
         if(Auth::check()){
             $user = auth()->user();
+            $userChats = $user->chats()->with(['users' => function ($query) use ($user) {
+                $query->where('users.id', '!=', $user->id); // Exclude the current user
+            }])->get();
+
+            // dd($userChats);
+
             return inertia('Chats', [
                 'user' => [
                     'id' => $user->id,
@@ -27,7 +31,7 @@ class ChatController extends Controller
                     'email' => $user->email,
                     'phonenumber' => $user->phonenumber,
                     'roles' => $user->roles()->pluck('name')->toArray(),
-                    'chats' => $user->chats()->get()
+                    'chats' => $userChats
                 ],
             ]);
         }
@@ -73,5 +77,12 @@ class ChatController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    public function getMemebers(int $chat_id){
+        $chat = Chat::find($chat_id);
+        // dd($chat);
+        $users = $chat->users()->get();
+        return response()->json($users, 201);
     }
 }

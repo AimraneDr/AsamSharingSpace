@@ -13,11 +13,48 @@ class MessageController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index($id)
+    public function getAll($chat_id)
     {
-        $messages = Message::where('chat_id', $id)->get();
-        return response()->json($messages);
+        try {
+            // Retrieve all messages for the specified chat_id with the associated sender
+            $messages = Message::where('chat_id', $chat_id)->with('sender')->get();
+
+            // Group messages by sendDate and sort messages within each group by sendTime
+            $groupedMessages = [];
+            foreach ($messages as $message) {
+                $sendDate = $message->sendDate;
+                if (!array_key_exists($sendDate, $groupedMessages)) {
+                    $groupedMessages[$sendDate] = [];
+                }
+                $groupedMessages[$sendDate][] = $message;
+            }
+
+            // Initialize the $formattedMessages array
+            $formattedMessages = [];
+
+            // Transform the grouped messages into the desired format
+            foreach ($groupedMessages as $date => $messageList) {
+                $formattedMessages[] = [
+                    'date' => $date,
+                    'messages' => $messageList,
+                ];
+            }
+            
+            // Return JSON response with the messages data
+            return response()->json([
+                'success' => true,
+                'messages' => $formattedMessages,
+            ]);
+        } catch (\Exception $e) {
+            // Handle any exceptions (e.g., database errors)
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch messages.',
+                'error' => $e->getMessage(),
+            ], 500); // Return 500 Internal Server Error status code
+        }
     }
+
 
     /**
      * Store a newly created message in storage.
@@ -32,7 +69,7 @@ class MessageController extends Controller
             'sender_id' => 'required|exists:users,id',
             'content' => 'required|string',
             'attachment' => 'nullable|string',
-            'status' => 'required|in:read,received,out,wait',
+            'status' => 'required|in:read,received,sent,sending',
             'sendDate' => 'required|date',
             'sendTime' => 'required|date_format:H:i:s',
         ]);
@@ -40,10 +77,9 @@ class MessageController extends Controller
         $chatId = $request->chat_id;
         $message = Message::create($request->all());
 
+        $message->update(['status' => 'sent']);
         // Publish message to the chat channel
-        // PublishMessageEvent::dispatch($chatId, $message->content);
-        // event(new PublishMessageEvent($chatId, $message->content));
-        broadcast(new PublishMessageEvent($chatId, $message->content));
+        broadcast(new PublishMessageEvent($chatId, $message->id));
 
 
 
@@ -55,8 +91,12 @@ class MessageController extends Controller
      * @param  \App\Models\Message  $message
      * @return \Illuminate\Http\Response
      */
-    public function show(Message $message)
+    public function get($chat_id, $msg_id)
     {
+        $message = Message::with('sender')->find($msg_id);
+        if (!$message) {
+            return response()->json(['message' => 'Message not found'], 404);
+        }
         return response()->json($message);
     }
 

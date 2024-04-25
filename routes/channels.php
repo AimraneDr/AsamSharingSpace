@@ -1,7 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Broadcast;
-
+use App\Models\User;
+use App\Models\Chat;
 /*
 |--------------------------------------------------------------------------
 | Broadcast Channels
@@ -13,14 +14,20 @@ use Illuminate\Support\Facades\Broadcast;
 |
 */
 
-Broadcast::channel('chat.{id}', function ($user, $id) {
-    // $chat = Chat::find($id);
-    // if(!$chat) {
-    //     return false;
-    // }
-    // //return if user is member of chat
-    // return $chat->users()->where('id', $user->id)->exists();
+Broadcast::channel('chat.{id}', function (User $user, int $id) {
+    $chat = Chat::find($id);
+    
+    if($chat && $chat->users()->where('users.id', $user->id)->exists()){
+        return ['id' => $user->id, 'firstname' => $user->firstname, 'lastname' => $user->lastname];
+    }
+});
 
-    return true; // Example: Allow access for all authenticated users (replace with your logic)
+Broadcast::channel('presence.user.{id}', function () {
+    if(auth()->check())
+        $user = auth()->user();
+        return ['id' => $user->id, 'firstname' => $user->firstname, 'lastname' => $user->lastname];
+});
 
+Broadcast::channel('user.{id}.updated', function() {
+    return auth()->check();
 });

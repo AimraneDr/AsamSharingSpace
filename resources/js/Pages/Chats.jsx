@@ -1,66 +1,96 @@
 import ChatroomListItem from "@/Components/Chats/ChatroomListItem";
 import Chatroom from "@/Components/Chats/chatroom";
+import { ChatProvider } from "@/Contexts/ChatContext";
 import Authenticated from "@/Layouts/AuthenticatedLayout";
-import { useState } from "react";
-/*
-
-    var ably = new Ably.Realtime('pass your API KEY HERE'); //remember to pass your ably API key
-    var channel = ably.channels.get('chatting'); // here i create a channel or initialize the existing channel
-    var messagesDiv = document.getElementById('messages');
-    var senderName = document.getElementById('senderName'); //get a sender name
-    var messageInput = document.getElementById('messageInput'); //get the message body
-    // then subscribe to an event from the channel(here my channel is called "chat")
-    // by subscribing to channel event means you listen to any event and receive any message from that channel
-    channel.subscribe('messageEvent', function(message) { // message this is message from channel
-        // Handle incoming messages (create a message body div tag)
-        var messageElement = document.createElement('div');
-        messageElement.textContent = message.data.name + ': ' + message.data.text;
-        // here i add the message content to my created div tag
-        messagesDiv.appendChild(messageElement);
-    });
-    // for sending message to chat channel we publish the new event with the intended message
-    function sendMessage() {
-        var message = messageInput.value.trim(); //get the message from input
-        var name = senderName.value; //get the sender name from input
-        if (message !== '') { //if input message is not empty publish a message
-            // Publish the message to the chat channel
-            channel.publish('messageEvent', { name: name, text: message, sender: 'local' });
-            
-            // Clear the input field
-            messageInput.value = '';
-            
-        }
-    }
-
-*/
+import axios from "axios";
+import { useEffect, useState } from "react";
 
 export default function Chats({ user }) {
-    const [currentChat, setCurrentChat] = useState();
+    const [currentChat, setCurrentChat] = useState(null);
+    const [toggleChatList, setToggleChatList] = useState(false);
+    const [isSmallScreen, setIsSmallScreen] = useState(window.innerWidth < 640);
 
-    const onSelectChat = (e, chat) => {
-        e.preventDefault();
-        setCurrentChat(chat);
-    };
+    useEffect(() => {
+        const handleResize = () => {
+            setIsSmallScreen(window.innerWidth < 640); // Set true if viewport width is less than 640px
+        };
+
+        // Initial check on component mount
+        handleResize();
+
+        // Listen for window resize events to update state
+        window.addEventListener("resize", handleResize);
+
+        const channelName = `presence.user.${user.id}`;
+        var channel = window.Echo.join(channelName);
+        // channel.here()
+        // channel.joining()
+        channel.leaving((user) => {
+            console.log("user is leaving");
+            // debugger;
+            axios.post(`api/users/${user.id}/last_seen`, {});
+        });
+        channel.error((err) => {
+            console.error(err);
+        });
+
+        // Trigger leaving event when the user navigates away
+        const handleBeforeUnload = () => {
+            channel.leave(); // Manually trigger leaving the channel
+            // debugger;
+            // handleLeaving(); // Handle leaving action
+        };
+        // Listen for beforeunload event to trigger leaving action
+        window.addEventListener("beforeunload", handleBeforeUnload);
+
+        // Clean up event listener on component unmount
+        return () => {
+            window.removeEventListener("resize", handleResize);
+            window.removeEventListener("beforeunload", handleBeforeUnload);
+            window.Echo.leave(channelName);
+            console.log("Leaving");
+            // debugger;
+        };
+    }, []);
 
     return (
         <Authenticated user={user}>
-            <div className="z-0 flex flex-row-reverse w-full h-full">
-                {/* Contact list - Chat rooms */}
-                <ul className="flex flex-col h-full overflow-y-auto w-[30%] p-4 transition-all duration-200 ease-in-out">
-                    {user.chats.map((c) => {
-                        return (
-                            <ChatroomListItem
-                                chat={c}
-                                user_id={user.id}
-                                opened={c === currentChat}
-                                onClick={onSelectChat}
-                            />
-                        );
-                    })}
-                </ul>
-
-                <Chatroom chat={currentChat} />
-            </div>
+            <ChatProvider chatRef={currentChat}>
+                <div className="z-0 flex flex-row-reverse w-full h-full">
+                    {/* Contact list - Chat rooms */}
+                    {isSmallScreen && toggleChatList && (
+                        <div
+                            className="z-1 absolute bg-slate-600 bg-opacity-30 top-0 left-0 bottom-0 right-0"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                setToggleChatList(false);
+                            }}
+                        ></div>
+                    )}
+                    <ul
+                        className={`z-9 flex flex-col h-full overflow-y-auto lg:w-[40%] p-4 transition-all duration-200 ease-in-out max-sm:absolute  max-sm:bg-white
+                    ${isSmallScreen && !toggleChatList && "left-full hidden"}`}
+                    >
+                        {user.chats.map((c) => {
+                            return (
+                                <ChatroomListItem
+                                    chat={c}
+                                    user_id={user.id}
+                                    opened={c === currentChat}
+                                    onClick={() => {
+                                        setToggleChatList(false);
+                                    }}
+                                />
+                            );
+                        })}
+                    </ul>
+                    <Chatroom
+                        isSmallScreen={isSmallScreen}
+                        toggleChatList={toggleChatList}
+                        setToggleChatList={setToggleChatList}
+                    />
+                </div>
+            </ChatProvider>
         </Authenticated>
     );
 }

@@ -1,4 +1,5 @@
-import { createContext, useState, useContext } from "react";
+import axios from "axios";
+import { createContext, useState, useContext, useEffect } from "react";
 
 // Create a new context
 const ChatContext = createContext();
@@ -18,7 +19,9 @@ export const ChatProvider = ({ chatRef, children }) => {
     };
 
     return (
-        <ChatContext.Provider value={{ chat, open, close }}>
+        <ChatContext.Provider
+            value={{ chat, open, close }}
+        >
             {children}
         </ChatContext.Provider>
     );

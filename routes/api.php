@@ -2,7 +2,10 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\MessageController;
+use App\Http\Controllers\PusherController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -19,5 +22,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 
-Route::get('chats/{id}/messages', [MessageController::class, 'index']);
-Route::post('chats/{id}/messages/send', [MessageController::class, 'store']);
+Route::get('chats/{chat_id}/users', [ChatController::class, 'getMemebers']);
+Route::get('chats/{chat_id}/messages', [MessageController::class, 'getAll']);
+Route::get('chats/{chat_id}/message/{msg_id}', [MessageController::class, 'get']);
+Route::post('chats/{chat_id}/messages/send', [MessageController::class, 'store']);
+Route::get('users/{user_id}/last_seen', [UserController::class, 'getLastseen']);
+Route::post('users/{user_id}/last_seen', [UserController::class, 'setLastseen']);

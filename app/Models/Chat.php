@@ -11,6 +11,6 @@ class Chat extends Model
     use HasFactory;
 
     public function users(){
-        return $this->BelongsToMany(User::class, 'chats_users');
+        return $this->belongsToMany(User::class, 'chats_users');
     }
 }

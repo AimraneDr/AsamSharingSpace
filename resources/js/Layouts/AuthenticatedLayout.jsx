@@ -6,12 +6,24 @@ import { AuthProvider } from "@/Contexts/AuthContext";
 export default function Authenticated({ user, children }) {
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
+    const [sidebarToggle, setSidebarToggle] = useState(false);
 
+    const toggleSidebar = (value) => {
+        if( value === undefined || value === null)
+            setSidebarToggle(!sidebarToggle);
+        else {
+            console.log("explicit call")
+            setSidebarToggle(value);
+        }
+    };
     return (
         <AuthProvider userRef={user}>
             <div className="flex max-h-screen h-screen relativ">
                 {/* <!-- ===== Sidebar Start ===== --> */}
-                <Sidebar />
+                <Sidebar
+                    sidebarToggle={sidebarToggle}
+                    toggleSidebar={toggleSidebar}
+                />
                 {/* <!-- ===== Sidebar End ===== --> */}
 
                 {/* <!-- ===== Content Area Start ===== --> */}
@@ -19,7 +31,10 @@ export default function Authenticated({ user, children }) {
                     {/* <!-- ===== Header Start ===== --> */}
                     <header className="bg-white shadow row-span-1 z-99">
                         <div className="max-w-7xl mx-auto py-3 px-2 sm:px-6 lg:px-8 ">
-                            <Header />
+                            <Header
+                                sidebarToggle={sidebarToggle}
+                                toggleSidebar={toggleSidebar}
+                            />
                         </div>
                     </header>
                     {/* <!-- ===== Header End ===== --> */}

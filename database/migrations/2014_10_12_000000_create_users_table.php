@@ -19,6 +19,7 @@ return new class extends Migration
             // $table->enum('type',['student', 'teacher', 'admin'])->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->dateTime('lastseen');
             $table->rememberToken();
             $table->timestamps();
         });

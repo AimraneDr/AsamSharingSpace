@@ -18,7 +18,7 @@ return new class extends Migration
             $table->foreignID('sender_id')->references('id')->on('users')->constrained();
             $table->string('content');
             $table->string('attachment')->nullable();
-            $table->enum('status', ['read', 'recieved', 'out', 'wait']);
+            $table->enum('status', ['read', 'recieved', 'sent', 'sending']);
             $table->date('sendDate');
             $table->time('sendTime');
             $table->timestamps();

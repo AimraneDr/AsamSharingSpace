@@ -3,9 +3,30 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\User;
+use App\Events\UserUpdatedEvent;
 
 class UserController extends Controller
 {
+
+    public function getLastseen($user_id){
+        $user = User::findOrFail($userId);
+        $lastSeen = $user->last_seen;
+        if ($lastSeen) {
+            return response()->json(['user_id' => $user_id, 'last_seen' => $lastSeen], 200);
+        }
+        return response()->json(['message' => 'Failed to retrieve data'], 404);
+    }
+
+    public function setLastseen($user_id, Request $request){
+        $user = User::findOrFail($user_id);
+        $user->update(['lastseen' => now()]);
+
+        // dd($user);
+        broadcast(new UserUpdatedEvent($user));
+        // Return a JSON response indicating success
+        return response()->json(['message' => 'Last seen updated successfully']);
+    }
    /**
      * Display a listing of the resource.
      */
@@ -60,4 +81,6 @@ class UserController extends Controller
     public function destroy(string $id)
     {
         //
-    }}
+    }
+
+}
