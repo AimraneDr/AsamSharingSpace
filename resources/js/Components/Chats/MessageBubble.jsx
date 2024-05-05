@@ -1,5 +1,8 @@
 import { useAuth } from "@/Contexts/AuthContext";
 import React, { useEffect, useRef, useState } from "react";
+import PdfSvg from "../svgs/PdfSvg";
+import FrameSvg from "../svgs/FrameSvg";
+import { useChat } from "@/Contexts/ChatContext";
 
 const MessageBubble = React.forwardRef(
     ({ msg, i, unsaved, showHeader }, ref) => {
@@ -7,6 +10,7 @@ const MessageBubble = React.forwardRef(
         const { user } = useAuth();
         const dropdownRef = useRef(null);
         const btnRef = useRef(null);
+        const { setImageInView } = useChat();
 
         const [hour, minute] = msg.sendTime.split(":"); // Split the time string by ':'
 
@@ -48,7 +52,7 @@ const MessageBubble = React.forwardRef(
                 }`}
             >
                 <div
-                    className={`flex flex-col w-full max-w-[520px] h-fit max-h-[250px] leading-1.5 py-1 p-1 border-2 dark:bg-gray-700 rounded-3xl ${
+                    className={`flex flex-col w-full max-w-[520px] h-fit leading-1.5 py-1 p-1 border-2 dark:bg-gray-700 rounded-3xl ${
                         user.id === msg.sender_id
                             ? `rounded-tr-none ${
                                   unsaved
@@ -77,6 +81,84 @@ const MessageBubble = React.forwardRef(
                             </span>
                         </div>
                     )}
+
+                    {/* Render attachments */}
+                    {msg.attachments && msg.attachments.length > 0 && (
+                        <div className="flex fllex-row flex-wrap gap-2 justify-center items-center bg-slate-800 bg-opacity-15 p-4 rounded-3xl">
+                            {msg.attachments.map((attachment, index) => {
+                                const isImageAttachment =
+                                    attachment.type.startsWith("image");
+                                const isSvg = attachment.path.endsWith(".svg");
+                                const isPdfAttachment =
+                                    attachment.path.endsWith("pdf");
+
+                                const attachmentPath = `http://localhost:8000/storage/${attachment.path}`;
+
+                                return (
+                                    <div
+                                        key={index}
+                                        className="relative flex items-center justify-center group"
+                                    >
+                                        {isImageAttachment &&
+                                            (isSvg ? (
+                                                <>
+                                                    {/* <div className="absolute justify-center items-center w-full h-full bg-slate-600 bg-opacity-50 hidden group-hover:flex">
+                                                        <FrameSvg
+                                                            className={`fill-slate-200 w-20 h-20 m-auto`}
+                                                        />
+                                                    </div> */}
+                                                    <img
+                                                        src={attachmentPath}
+                                                        alt={`Attachment ${index}`}
+                                                        className="max-w-50 h-auto rounded-lg"
+                                                    />
+                                                </>
+                                            ) : (
+                                                <div
+                                                    className="max-w-50 h-auto"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        setImageInView({
+                                                            msg_id: msg.id,
+                                                            image_i: index,
+                                                            imgPath: attachmentPath,
+                                                        });
+                                                    }}
+                                                >
+                                                    <div className="absolute justify-center items-center w-full h-full rounded-lg bg-slate-600 bg-opacity-50 hidden group-hover:flex">
+                                                        <FrameSvg
+                                                            className={`fill-white w-15 h-15`}
+                                                        />
+                                                    </div>
+                                                    <img
+                                                        src={attachmentPath}
+                                                        alt={`Attachment ${index}`}
+                                                        className="w-full h-full rounded-lg"
+                                                    />
+                                                </div>
+                                            ))}
+                                        {isPdfAttachment && (
+                                            <a
+                                                className="flex flex-col items-center justify-center w-20 h-20 bg-gray-200 rounded-lg"
+                                                href={attachmentPath}
+                                                target="_blank"
+                                            >
+                                                <PdfSvg
+                                                    className={`fill-red-400 w-20 h-20`}
+                                                />
+                                                <span className="text-sm w-full truncate">
+                                                    {attachment.name
+                                                        ? attachment.name
+                                                        : "unnamed"}
+                                                </span>
+                                            </a>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
                     <p className="text-sm font-normal py-2 pr-2 pl-1 text-gray-900 dark:text-white text-wrap break-words">
                         {msg.content}
                     </p>

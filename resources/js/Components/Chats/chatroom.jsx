@@ -5,6 +5,7 @@ import { useChat } from "@/Contexts/ChatContext";
 import axios from "axios";
 import React, { useEffect, useRef, useState } from "react";
 import MessageBubble from "./MessageBubble";
+import ImageViewer from "./ImageViewer";
 // import pusher from "@/echo";
 
 export default function Chatroom({
@@ -20,7 +21,7 @@ export default function Chatroom({
     const [presentUsers, setPresentUsers] = useState([]);
     const [activeUsers, setActiveUsers] = useState([]);
     const lastMsg = useRef();
-    const { chat } = useChat();
+    const { chat, imageInView } = useChat();
     const { user } = useAuth();
 
     let lastMessageRefIsSet = false;
@@ -199,145 +200,159 @@ export default function Chatroom({
     // };
 
     return (
-        <div className={`grid grid-cols-1 grid-rows-12 w-full ${className}`}>
-            {/* Chat Room Info */}
-            <div className="row-span-1 px-4 py-4 max-sm:px-1 bg-teal-700 text-teal-50 flex justify-between items-center">
-                <div className="flex justify-start items-center gap-4">
-                    <div className="size-10 rounded-full bg-teal-500">
-                        <img
-                            src="../../assets/images/user/user-02.png"
-                            alt="User"
+        <>
+            {imageInView && <ImageViewer />}
+            <div
+                className={`grid grid-cols-1 grid-rows-12 w-full ${className}`}
+            >
+                {/* Chat Room Info */}
+                <div className="row-span-1 px-4 py-4 max-sm:px-1 bg-teal-700 text-teal-50 flex justify-between items-center">
+                    <div className="flex justify-start items-center gap-4">
+                        <div className="size-10 rounded-full bg-teal-500">
+                            <img
+                                src="../../assets/images/user/user-02.png"
+                                alt="User"
+                            />
+                        </div>
+                        <div className="flex flex-col items-start justify-center text-md font-extrabold">
+                            <span>
+                                {chat &&
+                                    (chat.type === "private"
+                                        ? chat.users.length > 0
+                                            ? chat.users[0].firstname +
+                                              " " +
+                                              chat.users[0].lastname
+                                            : "user-name"
+                                        : chat.title || "empty group title")}
+                            </span>
+                            <span className="text-xs font-light">
+                                {chat &&
+                                    chat.type === "private" &&
+                                    (presentUserExists(chat.users[0].id)
+                                        ? `online`
+                                        : `last seen : ${
+                                              chat.users[0].lastseen
+                                                  ? new Date(
+                                                        chat.users[0].lastseen
+                                                    ).toLocaleString()
+                                                  : ""
+                                          }`)}
+                            </span>
+                        </div>
+                    </div>
+                    <button
+                        className="hover:bg-opacity-25 hover:bg-slate-100 p-1 pr-2 py-2 sm:hidden transition-all duration-150 ease-in-out rounded-xl"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            setToggleChatList(!toggleChatList);
+                        }}
+                    >
+                        <ArrowSvg
+                            className={`size-5 fill-slate-300 ${
+                                (isSmallScreen && toggleChatList) ||
+                                "rotate-180"
+                            }`}
                         />
-                    </div>
-                    <div className="flex flex-col items-start justify-center text-md font-extrabold">
-                        <span>
-                            {chat &&
-                                (chat.type === "private"
-                                    ? chat.users.length > 0
-                                        ? chat.users[0].firstname +
-                                          " " +
-                                          chat.users[0].lastname
-                                        : "user-name"
-                                    : chat.title || "empty group title")}
-                        </span>
-                        <span className="text-xs font-light">
-                            {chat &&
-                                chat.type === "private" &&
-                                (presentUserExists(chat.users[0].id)
-                                    ? `online`
-                                    : `last seen : ${chat.users[0].lastseen ? new Date(chat.users[0].lastseen).toLocaleString() : ''}`)}
-                        </span>
-                    </div>
+                    </button>
                 </div>
-                <button
-                    className="hover:bg-opacity-25 hover:bg-slate-100 p-1 pr-2 py-2 sm:hidden transition-all duration-150 ease-in-out rounded-xl"
-                    onClick={(e) => {
-                        e.preventDefault();
-                        setToggleChatList(!toggleChatList);
-                    }}
-                >
-                    <ArrowSvg
-                        className={`size-5 fill-slate-300 ${
-                            (isSmallScreen && toggleChatList) || "rotate-180"
-                        }`}
-                    />
-                </button>
-            </div>
-            {/* Chat Room Content */}
-            <div className="row-span-9 w-full overflow-y-auto">
-                <div className="w-full border-r-[1px] border-meta-4 flex flex-col-reverse p-4">
-                    {messages
-                        .slice()
-                        .reverse()
-                        .map((dateGroupedMsgs, i) => {
-                            const messages_copy = dateGroupedMsgs.messages
-                                .slice()
-                                .reverse();
-                            return (
-                                <div className="w-full">
-                                    <div className="text-sm text-center text-slate-600 bg-slate-200 font-bold mt-2 mb-1 rounded-lg">
-                                        {dateGroupedMsgs.date}
-                                    </div>
-                                    <div className="w-full flex flex-col-reverse">
-                                        {unsavedMessages.map((m, i) => {
-                                            if (
-                                                m.sendDate ===
-                                                dateGroupedMsgs.date
-                                            )
+                {/* Chat Room Content */}
+                <div className="row-span-9 w-full overflow-y-auto">
+                    <div className="w-full border-r-[1px] border-meta-4 flex flex-col-reverse p-4">
+                        {messages
+                            .slice()
+                            .reverse()
+                            .map((dateGroupedMsgs, i) => {
+                                const messages_copy = dateGroupedMsgs.messages
+                                    .slice()
+                                    .reverse();
+                                return (
+                                    <div className="w-full">
+                                        <div className="text-sm text-center text-slate-600 bg-slate-200 font-bold mt-2 mb-1 rounded-lg">
+                                            {dateGroupedMsgs.date}
+                                        </div>
+                                        <div className="w-full flex flex-col-reverse">
+                                            {unsavedMessages.map((m, i) => {
+                                                if (
+                                                    m.sendDate ===
+                                                    dateGroupedMsgs.date
+                                                )
+                                                    return (
+                                                        <MessageBubble
+                                                            i={i}
+                                                            msg={m}
+                                                            ref={
+                                                                unsavedMessages.length !==
+                                                                    0 &&
+                                                                unsavedMessages.length -
+                                                                    1 ===
+                                                                    i
+                                                                    ? lastMsg
+                                                                    : null
+                                                            }
+                                                            unsaved={true}
+                                                        />
+                                                    );
+                                            })}
+
+                                            {messages_copy.map((m, j) => {
+                                                const applyRef =
+                                                    !lastMessageRefIsSet;
+
+                                                const currentSender =
+                                                    m.sender_id;
+                                                const previousSender =
+                                                    j + 1 ===
+                                                    messages_copy.length
+                                                        ? null
+                                                        : messages_copy[j + 1]
+                                                              .sender_id;
+
+                                                // Determine if the current message has the same sender as the previous message
+                                                const sameSenderAsPrevious =
+                                                    currentSender ===
+                                                    previousSender;
+
+                                                const showBubbleHeader =
+                                                    chat &&
+                                                    chat.type === "group" &&
+                                                    !sameSenderAsPrevious;
+
+                                                if (!lastMessageRefIsSet) {
+                                                    lastMessageRefIsSet = true;
+                                                }
+                                                totalMsgs++;
                                                 return (
                                                     <MessageBubble
                                                         i={i}
                                                         msg={m}
                                                         ref={
-                                                            unsavedMessages.length !==
-                                                                0 &&
-                                                            unsavedMessages.length -
-                                                                1 ===
-                                                                i
+                                                            applyRef
                                                                 ? lastMsg
                                                                 : null
                                                         }
-                                                        unsaved={true}
+                                                        unsaved={false}
+                                                        showHeader={
+                                                            showBubbleHeader
+                                                        }
                                                     />
                                                 );
-                                        })}
-
-                                        {messages_copy.map((m, j) => {
-                                            const applyRef =
-                                                !lastMessageRefIsSet;
-
-                                            const currentSender = m.sender_id;
-                                            const previousSender =
-                                                j + 1 === messages_copy.length
-                                                    ? null
-                                                    : messages_copy[j + 1]
-                                                          .sender_id;
-
-                                            // Determine if the current message has the same sender as the previous message
-                                            const sameSenderAsPrevious =
-                                                currentSender ===
-                                                previousSender;
-
-                                            const showBubbleHeader =
-                                                chat &&
-                                                chat.type === "group" &&
-                                                !sameSenderAsPrevious;
-
-                                            if (!lastMessageRefIsSet) {
-                                                lastMessageRefIsSet = true;
-                                            }
-                                            totalMsgs++;
-                                            return (
-                                                <MessageBubble
-                                                    i={i}
-                                                    msg={m}
-                                                    ref={
-                                                        applyRef
-                                                            ? lastMsg
-                                                            : null
-                                                    }
-                                                    unsaved={false}
-                                                    showHeader={
-                                                        showBubbleHeader
-                                                    }
-                                                />
-                                            );
-                                        })}
+                                            })}
+                                        </div>
                                     </div>
-                                </div>
-                            );
-                        })}
+                                );
+                            })}
+                    </div>
+                </div>
+                {/* Message Input */}
+                <div className="row-span-2 p-3 flex items-center shadow">
+                    <MessageInput
+                        chat={chat}
+                        user={user}
+                        pendMsg={appendMsg}
+                        msgSent={messageSent}
+                    />
                 </div>
             </div>
-            {/* Message Input */}
-            <div className="row-span-2 p-3 flex items-center shadow">
-                <MessageInput
-                    chat={chat}
-                    user={user}
-                    pendMsg={appendMsg}
-                    msgSent={messageSent}
-                />
-            </div>
-        </div>
+        </>
     );
 }

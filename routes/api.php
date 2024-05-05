@@ -28,3 +28,5 @@ Route::get('chats/{chat_id}/message/{msg_id}', [MessageController::class, 'get']
 Route::post('chats/{chat_id}/messages/send', [MessageController::class, 'store']);
 Route::get('users/{user_id}/last_seen', [UserController::class, 'getLastseen']);
 Route::post('users/{user_id}/last_seen', [UserController::class, 'setLastseen']);
+
+Route::post('files/upload', [MessageController::class, 'uploadFile']);

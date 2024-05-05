@@ -22,7 +22,6 @@
         "vite": "^5.0.0"
     },
     "dependencies": {
-        "@ably/laravel-echo": "^1.0.4",
-        "ably": "^1.2.50"
+        "@ably/laravel-echo": "^1.0.4"
     }
 }

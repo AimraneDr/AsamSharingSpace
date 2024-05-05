@@ -7,6 +7,7 @@ const ChatContext = createContext();
 // AuthProvider component to wrap the application and provide authentication context
 export const ChatProvider = ({ chatRef, children }) => {
     const [chat, setChat] = useState(chatRef); // State to hold authenticated user information
+    const [imageInView, setImageInView] = useState(); // State to hold authenticated user information
 
     // Function to set chat
     const open = (chatData) => {
@@ -19,9 +20,7 @@ export const ChatProvider = ({ chatRef, children }) => {
     };
 
     return (
-        <ChatContext.Provider
-            value={{ chat, open, close }}
-        >
+        <ChatContext.Provider value={{ chat, imageInView, setImageInView, open, close }}>
             {children}
         </ChatContext.Provider>
     );

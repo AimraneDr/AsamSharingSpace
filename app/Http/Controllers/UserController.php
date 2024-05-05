@@ -20,7 +20,7 @@ class UserController extends Controller
 
     public function setLastseen($user_id, Request $request){
         $user = User::findOrFail($user_id);
-        $user->update(['lastseen' => now()]);
+        $user->update(['lastseen' => now()->toDateString()]);
 
         // dd($user);
         broadcast(new UserUpdatedEvent($user));

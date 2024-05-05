@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Events\PublishMessageEvent;
 use App\Models\Message;
+use App\Models\Attachment;
 use Illuminate\Http\Request;
 
 class MessageController extends Controller
@@ -17,7 +18,7 @@ class MessageController extends Controller
     {
         try {
             // Retrieve all messages for the specified chat_id with the associated sender
-            $messages = Message::where('chat_id', $chat_id)->with('sender')->get();
+            $messages = Message::where('chat_id', $chat_id)->with('sender')->with('attachments')->get();
 
             // Group messages by sendDate and sort messages within each group by sendTime
             $groupedMessages = [];
@@ -39,6 +40,8 @@ class MessageController extends Controller
                     'messages' => $messageList,
                 ];
             }
+
+            // dd($formattedMessages);
             
             // Return JSON response with the messages data
             return response()->json([
@@ -68,14 +71,35 @@ class MessageController extends Controller
             'chat_id' => 'required|exists:chats,id',
             'sender_id' => 'required|exists:users,id',
             'content' => 'required|string',
-            'attachment' => 'nullable|string',
-            'status' => 'required|in:read,received,sent,sending',
-            'sendDate' => 'required|date',
-            'sendTime' => 'required|date_format:H:i:s',
+            'attachments.*' => 'file|mimes:jpeg,png,svg,pdf,doc,docx|max:2048',
         ]);
 
         $chatId = $request->chat_id;
-        $message = Message::create($request->all());
+        // $message = Message::create($request->all());
+
+        $message = Message::create([
+            'content' => $request['content'],
+            'chat_id' => $request['chat_id'],
+            'sender_id' => $request['sender_id'],
+            'status' => 'sending', // Default status
+            'sendDate' => now()->toDateString(),
+            'sendTime' => now()->toTimeString(),
+        ]);
+
+        // Handle attachments
+        if ($request->hasFile('attachments')) {
+            foreach ($request->file('attachments') as $file) {
+                $path = $file->store('uploads'); // Store file in storage/app/uploads directory
+                $attachment = new Attachment([
+                    'message_id' => $message->id,
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $path,
+                    'type' => $file->getClientMimeType()
+                ]);
+                $attachment->save();
+            }
+        }
+
 
         $message->update(['status' => 'sent']);
         // Publish message to the chat channel
@@ -93,7 +117,7 @@ class MessageController extends Controller
      */
     public function get($chat_id, $msg_id)
     {
-        $message = Message::with('sender')->find($msg_id);
+        $message = Message::with(['sender','attachments'])->find($msg_id);
         if (!$message) {
             return response()->json(['message' => 'Message not found'], 404);
         }
@@ -112,7 +136,7 @@ class MessageController extends Controller
         $request->validate([
             'chat_id' => 'sometimes|required|exists:chats,id',
             'sender_id' => 'sometimes|required|exists:users,id',
-            'attachment' => 'nullable|string',
+            'attachments.*' => 'file|mimes:jpeg,png,pdf,doc,docx|max:2048',
             'status' => 'sometimes|required|in:read,received,out,wait',
             'sentDate' => 'sometimes|required|date',
             'sentTime' => 'sometimes|required|date_format:H:i:s',
