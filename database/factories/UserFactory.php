@@ -5,6 +5,8 @@ namespace Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use App\Models\Role;
+use App\Models\User;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
@@ -24,6 +26,7 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
+            'username' => fake()->name(),
             'firstname' => fake()->firstname(),
             'lastname' => fake()->lastname(),
             'email' => fake()->unique()->safeEmail(),
@@ -41,5 +44,34 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
         ]);
+    }
+    
+    public function admin(): Factory
+    {
+        return $this->state(function (array $attributes) {
+            return [];
+        })->afterCreating(function (User $user) {
+            $adminRole = Role::where('name', 'admin')->first();
+            $user->role()->attach($adminRole);
+        });
+    }
+
+    public function student(): Factory
+    {
+        return $this->state(function (array $attributes) {
+            return [];
+        })->afterCreating(function (User $user) {
+            $adminRole = Role::where('name', 'student')->first();
+            $user->role()->attach($adminRole);
+        });
+    }
+    public function teacher(): Factory
+    {
+        return $this->state(function (array $attributes) {
+            return [];
+        })->afterCreating(function (User $user) {
+            $adminRole = Role::where('name', 'teacher')->first();
+            $user->role()->attach($adminRole);
+        });
     }
 }

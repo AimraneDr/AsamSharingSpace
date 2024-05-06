@@ -3,10 +3,105 @@
 @tailwind utilities;
 
 
-.gradient {
-    background: linear-gradient(90deg, #d53369 0%, #daae51 100%);
+.conversation-item .avatar.online:before{
+    background: limegreen;
+    width: 9px;
+    height: 8px;
+    top: 1%;
+    right: 1%;
+    outline-width: 2px;
+}
+.conversation-item .avatar.offline:before {
+    background: gold;
+    width: 9px;
+    height: 8px;
+    top: 1%;
+    right: 1%;
+    outline-width: 2px;
 }
 
-.gradient-v{
-    background: linear-gradient(180deg, #d53369 0%, #daae51 130%);
+.chat-message-content > blockquote,
+.chat-message-content > dl,
+.chat-message-content > dd,
+.chat-message-content > h1,
+.chat-message-content > h2,
+.chat-message-content > h3,
+.chat-message-content > h4,
+.chat-message-content > h5,
+.chat-message-content > h6,
+.chat-message-content > hr,
+.chat-message-content > figure,
+.chat-message-content > p,
+.chat-message-content > pre{
+    margin-top: 0;
+    margin-bottom: 5px;
+}
+
+.chat-message-content>ul,
+.chat-message-content>ol {
+    list-style: revert;
+    margin: revert;
+    padding: revert;
+}
+
+.chat-message-content>table {
+    border-collapse: revert;
+}
+
+.chat-message-content>h1,
+.chat-message-content>h2,
+.chat-message-content>h3,
+.chat-message-content>h4,
+.chat-message-content>h5,
+.chat-message-content>h6{
+    font-size: revert;
+    font-weight: revert;;
+}
+
+.chat-message-content>a {
+    text-decoration: underline;
+    color:rgb(89, 226, 208)
+}
+
+.chat-message-content> :first-child {
+    margin-top: 0;
+}
+
+.chat-message-content> :last-child {
+    margin-bottom: 0;
+}
+
+.chat-message-content>blockquote {
+    margin-left: 0;
+    margin-right:0;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    padding-top: .5rem;
+    padding-bottom: .5rem;
+    overflow: hidden;
+    border-left: 5px solid #42b983;
+    background-color: rgba(0, 0, 0, 0.1);
+    font-style: italic;
+    border-radius: 0.5rem;
+}
+
+.chat-message-content code {
+    font-family: 'Courier New', monospace;
+    font-size: 90%;
+    font-style: italic;
+    padding: 2px 4px;
+    border-radius: 6px;
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.chat-message-content pre {
+    white-space: no-wrap;
+    overflow-x: auto;
+    font-style: italic;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background-color: rgba(0, 0, 0, 0.1);
+}
+.chat-message-content pre code{
+    background-color: transparent;
 }

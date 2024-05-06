@@ -1,96 +1,158 @@
-import ChatroomListItem from "@/Components/Chats/ChatroomListItem";
-import Chatroom from "@/Components/Chats/chatroom";
-import { ChatProvider } from "@/Contexts/ChatContext";
-import Authenticated from "@/Layouts/AuthenticatedLayout";
-import axios from "axios";
-import { useEffect, useState } from "react";
+import ConversationHeader from "@/Components/App/Conversation/ConversationHeader";
+import MessageInput from "@/Components/App/Conversation/MessageInput";
+import MessageItem from "@/Components/App/Conversation/MessageItem";
+import { useEventBus } from "@/EventBus";
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import ChatLayout from "@/Layouts/ChatLayout";
+import { ChatBubbleLeftRightIcon } from "@heroicons/react/24/solid";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-export default function Chats({ user }) {
-    const [currentChat, setCurrentChat] = useState(null);
-    const [toggleChatList, setToggleChatList] = useState(false);
-    const [isSmallScreen, setIsSmallScreen] = useState(window.innerWidth < 640);
+function Chats({ messages, selectedConversation }) {
+    const [localMessages, setLocalMessages] = useState([]);
+    const [noMoreMessages, setNoMoreMessages] = useState(false);
+    const [scrollFromBottom, setScrollFromBottom] = useState(0);
+    const MessagesContainerRef = useRef(null);
+    const loadOlderIntersected = useRef(null);
+    const { on } = useEventBus();
+
+    const messageRecieved = (message) => {
+        if (
+            selectedConversation &&
+            selectedConversation.is_group &&
+            selectedConversation.id == message.group_id
+        ) {
+            setLocalMessages((prev) => [...prev, message]);
+        }
+        if (
+            selectedConversation &&
+            selectedConversation.is_conversation &&
+            selectedConversation.id == message.conversation_id
+        ) {
+            setLocalMessages((prev) => [...prev, message]);
+        }
+    };
+
+    const LoadMoreMessages = useCallback(() => {
+        if (noMoreMessages) return;
+
+        const firstMessage = localMessages[0];
+        axios
+            .get(route("messages.loadOlder", firstMessage.id))
+            .then(({ data }) => {
+                if (data.data.length === 0) {
+                    setNoMoreMessages(true);
+                    return;
+                }
+
+                const scrollHeight = MessagesContainerRef.current.scrollHeight;
+                const scrollTop = MessagesContainerRef.current.scrollTop;
+                const clientHeight = MessagesContainerRef.current.clientHeight;
+
+                setScrollFromBottom(scrollHeight - scrollTop - clientHeight);
+
+                setLocalMessages((prev) => [...data.data.reverse(), ...prev]);
+            })
+            .catch((err) => {
+                console.log(err);
+            });
+    }, [localMessages, noMoreMessages]);
 
     useEffect(() => {
-        const handleResize = () => {
-            setIsSmallScreen(window.innerWidth < 640); // Set true if viewport width is less than 640px
-        };
+        setLocalMessages(messages ? messages.data.reverse() : []);
+    }, [messages]);
 
-        // Initial check on component mount
-        handleResize();
+    useEffect(() => {
+        setTimeout(() => {
+            MessagesContainerRef.current.scrollTop =
+                MessagesContainerRef.current.scrollHeight;
+        }, 10);
 
-        // Listen for window resize events to update state
-        window.addEventListener("resize", handleResize);
+        const offResieved = on("message.recieved", messageRecieved);
 
-        const channelName = `presence.user.${user.id}`;
-        var channel = window.Echo.join(channelName);
-        // channel.here()
-        // channel.joining()
-        channel.leaving((user) => {
-            console.log("user is leaving");
-            // debugger;
-            axios.post(`api/users/${user.id}/last_seen`, {});
-        });
-        channel.error((err) => {
-            console.error(err);
-        });
+        setScrollFromBottom(0);
+        setNoMoreMessages(false);
 
-        // Trigger leaving event when the user navigates away
-        const handleBeforeUnload = () => {
-            channel.leave(); // Manually trigger leaving the channel
-            // debugger;
-            // handleLeaving(); // Handle leaving action
-        };
-        // Listen for beforeunload event to trigger leaving action
-        window.addEventListener("beforeunload", handleBeforeUnload);
-
-        // Clean up event listener on component unmount
         return () => {
-            window.removeEventListener("resize", handleResize);
-            window.removeEventListener("beforeunload", handleBeforeUnload);
-            window.Echo.leave(channelName);
-            console.log("Leaving");
-            // debugger;
+            offResieved();
         };
-    }, []);
+    }, [selectedConversation]);
 
+    useEffect(() => {
+        if (MessagesContainerRef.current && scrollFromBottom !== null) {
+            MessagesContainerRef.current.scrollTop =
+                MessagesContainerRef.current.scrollHeight -
+                MessagesContainerRef.current.offsetHeight -
+                scrollFromBottom;
+        }
+        if (noMoreMessages) {
+            return;
+        }
+
+        const observer = new IntersectionObserver(
+            (entries) =>
+                entries.forEach(
+                    (entry) => entry.isIntersecting && LoadMoreMessages()
+                ),
+            { rootMargin: "0px 0px 250px 0px" }
+        );
+        if(loadOlderIntersected.current){
+            setTimeout(() => {
+                observer.observe(loadOlderIntersected.current);
+            }, 100);
+        }
+
+        return ()=>{
+            observer.disconnect();
+        }
+    }, [localMessages]);
     return (
-        <Authenticated user={user}>
-            <ChatProvider chatRef={currentChat}>
-                <div className="z-0 flex flex-row-reverse w-full h-full">
-                    {/* Contact list - Chat rooms */}
-                    {isSmallScreen && toggleChatList && (
-                        <div
-                            className="z-1 absolute bg-slate-600 bg-opacity-30 top-0 left-0 bottom-0 right-0"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                setToggleChatList(false);
-                            }}
-                        ></div>
-                    )}
-                    <ul
-                        className={`z-9 flex flex-col h-full overflow-y-auto lg:w-[40%] p-4 transition-all duration-200 ease-in-out max-sm:absolute  max-sm:bg-white
-                    ${isSmallScreen && !toggleChatList && "left-full hidden"}`}
-                    >
-                        {user.chats.map((c) => {
-                            return (
-                                <ChatroomListItem
-                                    chat={c}
-                                    user_id={user.id}
-                                    opened={c === currentChat}
-                                    onClick={() => {
-                                        setToggleChatList(false);
-                                    }}
-                                />
-                            );
-                        })}
-                    </ul>
-                    <Chatroom
-                        isSmallScreen={isSmallScreen}
-                        toggleChatList={toggleChatList}
-                        setToggleChatList={setToggleChatList}
-                    />
+        <>
+            {!messages ? (
+                <div className="flex flex-col gap-8 justify-center items-center text-center h-full opacity-35">
+                    <div className="text-2xl font-bold md:text-4xl p-16 text-slate-600">
+                        No Conversation is selected.
+                    </div>
+                    <ChatBubbleLeftRightIcon className="w-32 h-32 inline-block" />
                 </div>
-            </ChatProvider>
-        </Authenticated>
+            ) : (
+                <>
+                    <ConversationHeader conversation={selectedConversation} />
+                    <div
+                        className="flex-1 overflow-y-auto p-5"
+                        ref={MessagesContainerRef}
+                    >
+                        {localMessages.length === 0 ? (
+                            <div className="flex flex-col gap-8 justify-center items-center text-center h-full opacity-35">
+                                <div className="text-2xl font-bold md:text-4xl p-16 text-slate-600">
+                                    Conversation is Empty, start chatting by
+                                    sending a message!
+                                </div>
+                                <ChatBubbleLeftRightIcon className="w-32 h-32 inline-block" />
+                            </div>
+                        ) : (
+                            <div className="flex-1 flex flex-col">
+                                <div
+                                    ref={loadOlderIntersected}
+                                ></div>
+                                {localMessages.map((m) => (
+                                    <MessageItem key={m.id} message={m} />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    <MessageInput conversation={selectedConversation} />
+                </>
+            )}
+        </>
     );
 }
+
+Chats.layout = (page) => {
+    return (
+        <AuthenticatedLayout>
+            <ChatLayout children={page}></ChatLayout>
+        </AuthenticatedLayout>
+    );
+};
+
+export default Chats;

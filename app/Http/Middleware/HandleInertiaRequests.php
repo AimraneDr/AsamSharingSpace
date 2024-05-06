@@ -4,6 +4,8 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Conversation;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -29,11 +31,17 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        if ($request->is('chats*') && Auth::id()) {
+            $conversations = Conversation::getCOnversationsForListView(Auth::user());
+        } else {
+            $conversations = [];
+        }
         return [
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user(),
             ],
+            'conversations' => $conversations,
         ];
     }
 }

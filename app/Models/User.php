@@ -6,14 +6,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
-
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
-
-    protected $dates = ['lastseen'];
+    use HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -24,9 +20,11 @@ class User extends Authenticatable
         'username',
         'firstname',
         'lastname',
+        'profile',
         'email',
+        'email_veryfied_at',
+        'last_seen_at',
         'password',
-        'lastseen'
     ];
 
     /**
@@ -40,35 +38,36 @@ class User extends Authenticatable
     ];
 
     /**
-     * The attributes that should be cast.
+     * Get the attributes that should be cast.
      *
-     * @var array<string, string>
+     * @return array<string, string>
      */
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-    ];
-
-    public function Group(){
-        return 0;
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
+    }
+    public function fullname(){
+        return $this->lastname.' '.$this->firstname;
+    }
+    public function groups(){
+        return $this->belongsToMany(Group::class, 'group_users');
     }
 
-    public function roles() {
-        return $this->belongsToMany(Role::class, 'role_users');
+    public function conversations()
+    {
+        return $this->hasMany(Conversation::class, 'user1_id')
+                    ->orWhere('user2_id', $this->id);
     }
 
-    public function isAdministrator() {
-        return $this->roles()->where('name', 'admin')->exists();
-    }
-    public function isStudent() {
-        return $this->roles()->where('name', 'student')->exists();
-    }
-    public function isTeacher() {
-        return $this->roles()->where('name', 'teacher')->exists();
+    public function isBlocked(){
+        return $this->blocked_at === null ? false : true;
     }
 
-    public function chats(){
-        // dd($this->belongsToMany(Chat::class, 'chats_users'));
-        return $this->belongsToMany(Chat::class, 'chats_users');
+    public function role(){
+        return $this->belongsToMany(Role::class, 'user_roles');
     }
+
 }

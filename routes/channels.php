@@ -1,33 +1,22 @@
 <?php
 
 use Illuminate\Support\Facades\Broadcast;
+use App\Http\Resources\UserResource;
 use App\Models\User;
-use App\Models\Chat;
-/*
-|--------------------------------------------------------------------------
-| Broadcast Channels
-|--------------------------------------------------------------------------
-|
-| Here you may register all of the event broadcasting channels that your
-| application supports. The given channel authorization callbacks are
-| used to check if an authenticated user can listen to the channel.
-|
-*/
+use App\Models\Conversation;
 
-Broadcast::channel('chat.{id}', function (User $user, int $id) {
-    $chat = Chat::find($id);
-    
-    if($chat && $chat->users()->where('users.id', $user->id)->exists()){
-        return ['id' => $user->id, 'firstname' => $user->firstname, 'lastname' => $user->lastname];
+Broadcast::channel('online', function(User $user){
+    return $user ? new UserResource($user): null;
+});
+//messages.conversation.4
+Broadcast::channel('messages.conversation.{conversationId}', function(User $user, int $conversationId){
+    $conversation = Conversation::find($conversationId);
+    if($conversation){
+        return $conversation->user1_id === $user->id || $conversation->user2_id === $user->id;
     }
+    return false;
 });
 
-Broadcast::channel('presence.user.{id}', function () {
-    if(auth()->check())
-        $user = auth()->user();
-        return ['id' => $user->id, 'firstname' => $user->firstname, 'lastname' => $user->lastname];
-});
-
-Broadcast::channel('user.{id}.updated', function() {
-    return auth()->check();
+Broadcast::channel('messages.group.{groupId}', function(User $user, int $groupId){
+    return $user->groups->contains('id', $groupId);
 });

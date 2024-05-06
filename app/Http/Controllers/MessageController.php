@@ -2,159 +2,117 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\PublishMessageEvent;
-use App\Models\Message;
-use App\Models\Attachment;
 use Illuminate\Http\Request;
+use App\Models\Message;
+use App\Models\Conversation;
+use App\Models\Group;
+use App\Models\User;
+use App\Http\Resources\MessageResource;
+use App\Http\Requests\StoreMessageRequest;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
+use App\Events\MessageSentEvent;
+
 
 class MessageController extends Controller
 {
-    /**
-     * Display a listing of the messages.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function getAll($chat_id)
-    {
-        try {
-            // Retrieve all messages for the specified chat_id with the associated sender
-            $messages = Message::where('chat_id', $chat_id)->with('sender')->with('attachments')->get();
+    //
 
-            // Group messages by sendDate and sort messages within each group by sendTime
-            $groupedMessages = [];
-            foreach ($messages as $message) {
-                $sendDate = $message->sendDate;
-                if (!array_key_exists($sendDate, $groupedMessages)) {
-                    $groupedMessages[$sendDate] = [];
-                }
-                $groupedMessages[$sendDate][] = $message;
-            }
-
-            // Initialize the $formattedMessages array
-            $formattedMessages = [];
-
-            // Transform the grouped messages into the desired format
-            foreach ($groupedMessages as $date => $messageList) {
-                $formattedMessages[] = [
-                    'date' => $date,
-                    'messages' => $messageList,
-                ];
-            }
-
-            // dd($formattedMessages);
-            
-            // Return JSON response with the messages data
-            return response()->json([
-                'success' => true,
-                'messages' => $formattedMessages,
-            ]);
-        } catch (\Exception $e) {
-            // Handle any exceptions (e.g., database errors)
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch messages.',
-                'error' => $e->getMessage(),
-            ], 500); // Return 500 Internal Server Error status code
-        }
+    public function loadConversation($conversation_id) {
+        $conversation = Conversation::findOrFail($conversation_id);
+        $reciever = $conversation->getEndUser();
+        $messages = Message::where('sender_id', auth()->id())->where('reciever_id', $reciever->id)
+                            ->orWhere('sender_id', $reciever->id)->where('reciever_id', auth()->id())
+                            ->latest()->paginate(15);
+        
+        return inertia("Chats",[
+            'selectedConversation' => $conversation->toConversationArray(),
+            'messages' => MessageResource::collection($messages)
+        ]);
     }
 
-
-    /**
-     * Store a newly created message in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
-    {
-        $request->validate([
-            'chat_id' => 'required|exists:chats,id',
-            'sender_id' => 'required|exists:users,id',
-            'content' => 'required|string',
-            'attachments.*' => 'file|mimes:jpeg,png,svg,pdf,doc,docx|max:2048',
+    public function loadGroup($group_id) {
+        $group = Group::findOrFail($group_id);
+        $messages = Message::where('group_id', $group->id)->latest()->paginate(15);
+        return inertia("Chats",[
+            'selectedConversation' => $group->toConversationArray(),
+            'messages' => MessageResource::collection($messages)
         ]);
+    }
 
-        $chatId = $request->chat_id;
-        // $message = Message::create($request->all());
+    public function loadOlder(int $message_id) {
+        $message = Message::findOrFail($message_id);
+        if($message->group_id){
+            $messages = Message::where('created_at', '<', $message->created_at)
+                ->where('group_id', $message->group_id)
+                ->latest()->paginate(15);
+        }else{
+            $messages = Message::where('created_at', '<', $message->created_at)
+                ->where(function ($query) use($message) {
+                    $query->where('sender_id', $message->sender_id)
+                        ->where('reciever_id', $message->reciever_id)
+                        ->orWhere('sender_id', $message->reciever_id)
+                        ->where('reciever_id', $message->sender_id);
+                })
+                ->latest()->paginate(15);
+        }
 
-        $message = Message::create([
-            'content' => $request['content'],
-            'chat_id' => $request['chat_id'],
-            'sender_id' => $request['sender_id'],
-            'status' => 'sending', // Default status
-            'sendDate' => now()->toDateString(),
-            'sendTime' => now()->toTimeString(),
-        ]);
+        return MessageResource::collection($messages);
+    }
 
-        // Handle attachments
-        if ($request->hasFile('attachments')) {
-            foreach ($request->file('attachments') as $file) {
-                $path = $file->store('uploads'); // Store file in storage/app/uploads directory
-                $attachment = new Attachment([
-                    'message_id' => $message->id,
+    public function store(StoreMessageRequest $req) {
+        // dd($req);
+        $data = $req->validated();
+        $data['sender_id'] = auth()->id();
+        $recieverId = $data['reciever_id'] ?? null;
+        $groupId = $data['group_id'] ?? null;
+
+
+        if($groupId) $group = Group::findOrFail($groupId);
+        if($recieverId){
+            $conversation = Conversation::IdentifyConversation($recieverId, auth()->id());
+            $data['conversation_id'] = $conversation->id;
+        }
+
+        $files = $data['attachments'] ?? [];
+
+        $message = Message::create($data);
+        $attachments = [];
+        if($files){
+            foreach($files as $file){
+                $dir = 'attachments'.Str::random(32);
+                Storage::makeDirectory($dir);
+
+                $model = [
+                    'msg_id' => $message->id,
                     'name' => $file->getClientOriginalName(),
-                    'path' => $path,
-                    'type' => $file->getClientMimeType()
-                ]);
-                $attachment->save();
+                    'mime' => $file->getClientMimeType(),
+                    'size' => $file->getSize(),
+                    'path' => $file->store($dir, 'public')
+                ];
+                $attachment = MessageAttachment::create($model);
+                $attachments[] = $attachment;
             }
+            $message->attachments = $attachments;
         }
 
-
-        $message->update(['status' => 'sent']);
-        // Publish message to the chat channel
-        broadcast(new PublishMessageEvent($chatId, $message->id));
-
-
-
-        return response()->json($message, 201);
-    }
-    /**
-     * Display the specified message.
-     *
-     * @param  \App\Models\Message  $message
-     * @return \Illuminate\Http\Response
-     */
-    public function get($chat_id, $msg_id)
-    {
-        $message = Message::with(['sender','attachments'])->find($msg_id);
-        if (!$message) {
-            return response()->json(['message' => 'Message not found'], 404);
+        if($recieverId){
+            Conversation::UpdateByNewMessage($conversation, $message);
+        }else if($groupId){
+            Group::UpdateByNewMessage($group,$message);
         }
-        return response()->json($message);
+
+        MessageSentEvent::dispatch($message);
+
+        return new MessageResource($message);
     }
 
-    /**
-     * Update the specified message in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Message  $message
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, Message $message)
-    {
-        $request->validate([
-            'chat_id' => 'sometimes|required|exists:chats,id',
-            'sender_id' => 'sometimes|required|exists:users,id',
-            'attachments.*' => 'file|mimes:jpeg,png,pdf,doc,docx|max:2048',
-            'status' => 'sometimes|required|in:read,received,out,wait',
-            'sentDate' => 'sometimes|required|date',
-            'sentTime' => 'sometimes|required|date_format:H:i:s',
-        ]);
+    public function destroy(Message $message) {
+        if($message->sender_id === auth()->id()){
+            return response()->json(['message' => 'Forbidden'],403);
+        }
 
-        $message->update($request->all());
-        return response()->json($message, 200);
-    }
-
-    /**
-     * Remove the specified message from storage.
-     *
-     * @param  \App\Models\Message  $message
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy(Message $message)
-    {
         $message->delete();
-        return response()->json(null, 204);
+        return response('', 204);
     }
 }

@@ -1,49 +1,23 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Storage;
-use Inertia\Inertia;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ChatController;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\PusherController;
+use App\Http\Controllers\MessageController;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
-|
-*/
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/',[HomeController::class, 'home'])->name('home');
+    Route::get('/dashboard',[UserController::class, 'dashboard'])->name('dashboard');
+    Route::get('/chats',[ChatController::class, 'chats'])->name('chats');
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-    ]);
-})->name('home');
-
-// Route::get('/dashboard', function () {
-//     return Inertia::render('Dashboard');
-// })->middleware(['auth', 'verified'])->name('dashboard');
-Route::middleware('update.lastseen')->group(function () {
-    Route::get('/chats', [ChatController::class, 'index'])->name('chats');
+    Route::get('/chats/conversation-{conversation_id}',[MessageController::class, 'loadConversation'])->name('chats.conversation');
+    Route::get('/chats/group-{group_id}',[MessageController::class, 'loadGroup'])->name('chats.group');
+    Route::post('/message', [MessageController::class, 'store'])->name('message.store');
+    Route::delete('/messages/{message_id}', [MessageController::class, 'destroy'])->name('message.delete');
+    Route::get('/messages/older/{message_id}', [MessageController::class, 'loadOlder'])->name('messages.loadOlder');
 });
-
-// Route::get('/home', function () {
-//     return view('home');
-// })->name('home');
-
-Route::get('/login', [AuthController::class, 'login'])->name('login');
-Route::post('/attempt-login', [AuthController::class, 'attemptLogin'])->name('attempt-login');
-Route::get('/signup', [AuthController::class, 'signup'])->name('signup');
-Route::post('/attempt-signup', [AuthController::class, 'attemptSignUp'])->name('attempt-signup');
-Route::get('/dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
-
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -51,20 +25,4 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::post('/pusher/auth', [PusherController::class, 'pusherAuth'])
-->middleware('auth');
-
-
-Route::get('storage/{path}', function ($path) {
- 
-    // Check if the file exists
-    if (!Storage::exists($path)) {
-        abort(404);
-    }
-
-    // Read the file contents and return a response with appropriate headers
-    $file = Storage::get($path);
-    $mimeType = Storage::mimeType('uploads/' . $path);
-
-    return response($file, 200)->header('Content-Type', $mimeType);
-})->where('path', '.*');
+require __DIR__.'/auth.php';
