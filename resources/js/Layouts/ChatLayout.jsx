@@ -4,6 +4,7 @@ import TextInput from "@/Components/TextInput";
 import { PencilSquareIcon } from "@heroicons/react/24/solid";
 import ConversationItem from "@/Components/App/Conversation/ConversationItem";
 import { useEventBus } from "@/EventBus";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 function ChatLayout({ children }) {
     const page = usePage();
@@ -12,7 +13,7 @@ function ChatLayout({ children }) {
     const user = page.props.auth.user;
     const [localConversations, setLocalConversations] = useState([]);
     const [sortedConversations, setSortedConversations] = useState([]);
-    const {on} = useEventBus();
+    const { on } = useEventBus();
 
     const { emit } = useEventBus();
 
@@ -50,12 +51,12 @@ function ChatLayout({ children }) {
         }),
     ];
 
-    useEffect(()=>{
-        const offRecieved = on("message.recieved",messageRecieved);
-        return()=>{
+    useEffect(() => {
+        const offRecieved = on("message.recieved", messageRecieved);
+        return () => {
             offRecieved();
-        }
-    },[on])
+        };
+    }, [on]);
     useEffect(() => {
         setSortedConversations(
             localConversations.sort((a, b) => {
@@ -152,9 +153,9 @@ function ChatLayout({ children }) {
         };
     }, []);
     return (
-        <div className="h-full w-full flex">
+        <div className="max-h-full max-w-full flex">
             <div
-                className={`transition-all w-full sm:w-[220px] md:w-[300px] bg-slate-800 flex flex-col overflow-hidden ${
+                className={`transition-all w-full sm:w-[220px] md:w-[300px] bg-moonstone text-moonstone-900 flex flex-col ${
                     selectedConversation && "-ml-[100%] sm:ml-0"
                 }`}
             >
@@ -164,19 +165,19 @@ function ChatLayout({ children }) {
                         className="tooltip tooltip-left"
                         data-tip="Create New Group"
                     >
-                        <button className="text-gray-400 hover:text-gray-200">
+                        <button className="text-moonstone-200 hover:text-moonstone-900 transition-all duration-200 ease-in-out">
                             <PencilSquareIcon className="w-4 h-4 inline-block ml-2" />
                         </button>
                     </div>
                 </div>
-                <div className="p-3">
+                <div className="px-3 py-1 border-b-2 border-moonstone-200">
                     <TextInput
                         onKeyUp={onSearch}
                         placeholder="Search for Groups and Users"
-                        className="w-full"
+                        className="w-full placeholder:text-moonstone-800 text-sm p-1.5 px-2 rounded-xl"
                     />
                 </div>
-                <div className="flex-1 overflow-auto h-screen">
+                <div className="flex-1 overflow-auto h-screen scrollbar">
                     {sortedConversations ? (
                         sortedConversations.map((c) => (
                             <ConversationItem

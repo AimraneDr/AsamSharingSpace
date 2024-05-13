@@ -21,12 +21,13 @@ class StoreMessageRequest extends FormRequest
      */
     public function rules(): array
     {
+        // dd($this);
         return [
             'content' => 'nullable|string',
             'group_id' => 'required_without:reciever_id|nullable|exists:groups,id',
             'reciever_id' => 'required_without:group_id|nullable|exists:users,id',
             'attachments' => 'nullable|array|max:10',
-            'attachments.*' => 'file|max:10240'
+            'attachments.*' => 'file|max:20480'
         ];
     }
 }

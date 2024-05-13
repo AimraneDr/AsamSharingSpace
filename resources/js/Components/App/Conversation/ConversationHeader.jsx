@@ -6,7 +6,7 @@ export default function ConversationHeader({ conversation }) {
     const user = usePage().props.auth.user;
 
     return (
-        <div className="p-3 flex justify-between items-center border-b border-slate-700">
+        <div className="p-2 flex justify-between items-center border-b border-moonstone-200 bg-moonstone text-moonstone-900">
             {conversation && (
                 <div className="flex items-center gap-3">
                     <Link
@@ -26,7 +26,7 @@ export default function ConversationHeader({ conversation }) {
                     <div>
                         <h3>{conversation.title}</h3>
                         {conversation.is_group && (
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-moonstone-900">
                                 {conversation.users.length} Members
                             </p>
                         )}

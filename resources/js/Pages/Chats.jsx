@@ -1,3 +1,4 @@
+import AttachmentsPreview from "@/Components/App/Conversation/AttachmentsPreview";
 import ConversationHeader from "@/Components/App/Conversation/ConversationHeader";
 import MessageInput from "@/Components/App/Conversation/MessageInput";
 import MessageItem from "@/Components/App/Conversation/MessageItem";
@@ -11,6 +12,8 @@ function Chats({ messages, selectedConversation }) {
     const [localMessages, setLocalMessages] = useState([]);
     const [noMoreMessages, setNoMoreMessages] = useState(false);
     const [scrollFromBottom, setScrollFromBottom] = useState(0);
+    const [showAttachmentsPreview, setShowAttachmentsPreview] = useState(false);
+    const [previewAttachment, setPreviewAttachment] = useState({});
     const MessagesContainerRef = useRef(null);
     const loadOlderIntersected = useRef(null);
     const { on } = useEventBus();
@@ -36,6 +39,7 @@ function Chats({ messages, selectedConversation }) {
         if (noMoreMessages) return;
 
         const firstMessage = localMessages[0];
+
         axios
             .get(route("messages.loadOlder", firstMessage.id))
             .then(({ data }) => {
@@ -57,8 +61,13 @@ function Chats({ messages, selectedConversation }) {
             });
     }, [localMessages, noMoreMessages]);
 
+    const onAttachmentClick = (attachments, index) => {
+        setPreviewAttachment({ attachments, index });
+        setShowAttachmentsPreview(true);
+    };
+
     useEffect(() => {
-        setLocalMessages(messages ? messages.data.reverse() : []);
+        setLocalMessages(messages ? [...messages.data.reverse()] : []);
     }, [messages]);
 
     useEffect(() => {
@@ -87,7 +96,6 @@ function Chats({ messages, selectedConversation }) {
         if (noMoreMessages) {
             return;
         }
-
         const observer = new IntersectionObserver(
             (entries) =>
                 entries.forEach(
@@ -95,15 +103,15 @@ function Chats({ messages, selectedConversation }) {
                 ),
             { rootMargin: "0px 0px 250px 0px" }
         );
-        if(loadOlderIntersected.current){
+        if (loadOlderIntersected.current) {
             setTimeout(() => {
                 observer.observe(loadOlderIntersected.current);
             }, 100);
         }
 
-        return ()=>{
+        return () => {
             observer.disconnect();
-        }
+        };
     }, [localMessages]);
     return (
         <>
@@ -118,7 +126,7 @@ function Chats({ messages, selectedConversation }) {
                 <>
                     <ConversationHeader conversation={selectedConversation} />
                     <div
-                        className="flex-1 overflow-y-auto p-5"
+                        className="flex-1 overflow-y-auto p-5 scrollbar"
                         ref={MessagesContainerRef}
                     >
                         {localMessages.length === 0 ? (
@@ -131,17 +139,27 @@ function Chats({ messages, selectedConversation }) {
                             </div>
                         ) : (
                             <div className="flex-1 flex flex-col">
-                                <div
-                                    ref={loadOlderIntersected}
-                                ></div>
+                                <div ref={loadOlderIntersected}></div>
                                 {localMessages.map((m) => (
-                                    <MessageItem key={m.id} message={m} />
+                                    <MessageItem
+                                        key={m.id}
+                                        message={m}
+                                        onAttachmentClick={onAttachmentClick}
+                                    />
                                 ))}
                             </div>
                         )}
                     </div>
                     <MessageInput conversation={selectedConversation} />
                 </>
+            )}
+            {previewAttachment.attachments && (
+                <AttachmentsPreview
+                    attachments={previewAttachment.attachments}
+                    index={previewAttachment.index}
+                    show={showAttachmentsPreview}
+                    onClose={() => setShowAttachmentsPreview(false)}
+                />
             )}
         </>
     );

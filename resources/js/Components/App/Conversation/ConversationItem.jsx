@@ -19,7 +19,7 @@ export default function ConversationItem({
                     : route("chats.conversation", conversation.id)
             }
             preserveState
-            className={`conversation-item flex items-center gap-2 p-2 text-gray300 transition-all cursor-pointer border-l-4 hover:bg-black/30 border-transparent ${
+            className={`conversation-item w-full flex items-center gap-2 p-2 transition-all cursor-pointer border-l-4 hover:bg-black/30 border-transparent ${
                 selectedConversation &&
                 selectedConversation.is_group === conversation.is_group &&
                 selectedConversation.id == conversation.id &&
@@ -37,7 +37,7 @@ export default function ConversationItem({
             />
 
             <div
-                className={`flex-1 text-sm max-w-full overflow-hidden ${
+                className={`flex-1 text-sm w-full overflow-hidden ${
                     conversation.is_conversation &&
                     conversation.blocked_at &&
                     "opacity-50"
@@ -49,14 +49,16 @@ export default function ConversationItem({
                     </h3>
                     {conversation.last_message_date && (
                         <span className="text-nowrap">
-                            {formatMessageDateShort(conversation.last_message_date)}
+                            {formatMessageDateShort(
+                                conversation.last_message_date
+                            )}
                         </span>
                     )}
                 </div>
                 {conversation.last_message && (
-                    <span className="text-xs truncate">
+                    <div className="text-xs truncate">
                         {conversation.last_message}
-                    </span>
+                    </div>
                 )}
                 {conversation.is_conversation && user.role.name === "admin" && (
                     <ConversationOptionsDropdown conversation={conversation} />

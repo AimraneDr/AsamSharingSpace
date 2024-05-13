@@ -10,18 +10,24 @@ export default function AuthenticatedLayout({ header, children }) {
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
 
     return (
-        <div className="bg-slate-900 h-screen flex flex-col">
-            <nav className="bg-white border-b border-gray-100">
+        <div className="bg-moonstone-800 h-screen flex flex-col">
+            <nav className="bg-moonstone border-b border-oxford_blue">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16">
                         <div className="flex">
                             <div className="shrink-0 flex items-center">
                                 <Link href="/">
-                                    <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800" />
+                                    <ApplicationLogo className="block h-9 w-auto fill-current text-moonstone-900" />
                                 </Link>
                             </div>
 
                             <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                                <NavLink
+                                    href={route("home")}
+                                    active={route().current("home")}
+                                >
+                                    Home
+                                </NavLink>
                                 <NavLink
                                     href={route("chats")}
                                     active={route().current("chats")}
@@ -44,9 +50,11 @@ export default function AuthenticatedLayout({ header, children }) {
                                         <span className="inline-flex rounded-md">
                                             <button
                                                 type="button"
-                                                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150"
+                                                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md bg-transparent/20 text-moonstone-900 hover:text-white hover:bg-transparent/15 focus:outline-none transition ease-in-out duration-150"
                                             >
-                                                {user.name}
+                                                {user.lastname +
+                                                    " " +
+                                                    user.firstname}
 
                                                 <svg
                                                     className="ms-2 -me-0.5 h-4 w-4"
@@ -64,7 +72,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                         </span>
                                     </Dropdown.Trigger>
 
-                                    <Dropdown.Content>
+                                    <Dropdown.Content className="bg-red-300 ">
                                         <Dropdown.Link
                                             href={route("profile.edit")}
                                         >
@@ -89,7 +97,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                         (previousState) => !previousState
                                     )
                                 }
-                                className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out"
+                                className="inline-flex items-center justify-center p-2 rounded-lg text-moonstone-900  hover:bg-transparent/20 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out"
                             >
                                 <svg
                                     className="h-6 w-6"
@@ -133,6 +141,12 @@ export default function AuthenticatedLayout({ header, children }) {
                 >
                     <div className="pt-2 pb-3 space-y-1">
                         <ResponsiveNavLink
+                            href={route("home")}
+                            active={route().current("home")}
+                        >
+                            Home
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
                             href={route("chats")}
                             active={route().current("chats")}
                         >
@@ -173,14 +187,13 @@ export default function AuthenticatedLayout({ header, children }) {
             </nav>
 
             {header && (
-                <header className="bg-white shadow">
-                    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                <header className="bg-moonstone-900 shadow">
+                    <div className="max-w-7xl mx-auto py-3 px-4 sm:px-6 lg:px-8">
                         {header}
                     </div>
                 </header>
             )}
-
-            <main className='flex-1 overflow-hidden'>{children}</main>
+            <main className="flex-1 overflow-hidden">{children}</main>
         </div>
     );
 }

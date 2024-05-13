@@ -37,7 +37,7 @@ export default function NewMessageInput({ value, onChange, onSend }) {
                 onChange={(e) => onChangeEvent(e)}
                 onKeyDown={onInoutKeyDown}
                 placeholder="Type a message..."
-                className="input input-bordered rounded-r-none resize-none overflow-y-auto max-h-40 w-full h-auto"
+                className="input input-bordered rounded-r-none resize-none overflow-y-auto max-h-40 h-auto w-full text-sm bg-oxford_blue text-moonstone-900"
             ></textarea>
     );
 }

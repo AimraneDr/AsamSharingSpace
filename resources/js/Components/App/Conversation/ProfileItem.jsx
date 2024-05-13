@@ -10,9 +10,9 @@ export default function ProfileItem({
         <>
             {group ? (
                 <div className="avatar placeholder">
-                    <div className="bg-gray-400 text-gray-800 rounded-full w-8">
+                    <div className="bg-moonstone-900 text-oxford_blue  rounded-full w-8">
                         <span className="text-xl">
-                            <UsersIcon />
+                            <UsersIcon className="w-5"/>
                         </span>
                     </div>
                 </div>
@@ -33,15 +33,17 @@ export default function ProfileItem({
                     }`}
                 >
                     <div
-                        className={`bg-gray-400 text-gray-800 rounded-full ${
+                        className={`bg-moonstone-900 text-oxford_blue rounded-full ${
                             profile ? "w-40" : "w-8"
                         }`}
                     >
                         <span className="text-lg">
-                            {user && user.firstname && user.lastname
-                                ? user.lastname.substring(0, 1) +
-                                  user.firstname.substring(0, 1)
-                                : <UserIcon className="w-6"/>}
+                            {user && user.firstname && user.lastname ? (
+                                user.lastname.substring(0, 1) +
+                                user.firstname.substring(0, 1)
+                            ) : (
+                                <UserIcon className="w-6" />
+                            )}
                         </span>
                     </div>
                 </div>

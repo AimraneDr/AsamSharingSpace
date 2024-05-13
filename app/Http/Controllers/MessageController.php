@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Message;
+use App\Models\MessageAttachment;
 use App\Models\Conversation;
 use App\Models\Group;
 use App\Models\User;

@@ -2,6 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
+.gradiant-blue{
+  background: rgb(10, 34, 57);
+  background: linear-gradient(209deg, rgba(10, 34, 57, 1) 25%, rgba(29, 132, 181, 1) 100%);
+}
+
+/* Define a custom scrollbar style within a class */
+.scrollbar::-webkit-scrollbar {
+    width: 6px;
+    /* width of the entire scrollbar */
+}
+
+.scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    /* color of the tracking area */
+}
+
+.scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, .25);
+    /* color of the scroll thumb */
+    border-radius: 20px;
+}
 
 .conversation-item .avatar.online:before{
     background: limegreen;
